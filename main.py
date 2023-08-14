@@ -4,15 +4,14 @@ import requests
 
 app = Flask(__name__)
 
-@app.route('/scrape', methods=['Post'])
+@app.route('/scrape', methods=['POST'])
 def scrape():
-    url = request.json('url')
-    # print(url)
-    classtoscrape = request.json('classname')
-    print(classtoscrape)
-    if not url:
+    requestJsonObject = request.json
+    print("jsonobject ==>",requestJsonObject)
+    url= requestJsonObject.get("url")
+    classtoextract = requestJsonObject.get("class")
+    if not url:   
         return jsonify({'error': 'Missing URL parameter'}), 400
-
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -21,12 +20,15 @@ def scrape():
             # Extract the title from the parsed HTML
         title = soup.title.text if soup.title else "Title Not Found"
         print(title)
-        elements_with_class = soup.find_all(class_='classtoscrape')
-        a =[]
-        extracted_text = [a.append(element) for element in elements_with_class]
+        scraped_data = []
+        elements = soup.find_all(class_=classtoextract)
+        for element in elements:
+            scraped_data.append(element.get_text())
+        # Replace with appropriate selector for your target table
         return jsonify({
             "Title":title,
-            "Quotes":extracted_text
+            'Quotes': scraped_data
+
         }),200
 
     except requests.exceptions.RequestException as e:
