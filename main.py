@@ -1,6 +1,8 @@
-from flask import Flask, request, jsonify,render_template
+from flask import Flask, request, jsonify,send_file,make_response
 from bs4 import BeautifulSoup
 import requests
+import json
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -23,22 +25,26 @@ def scrape():
         title = soup.title.text if soup.title else "Title Not Found"
         print(title)
         scraped_data = []
+        json_data={}
+        # json_data = json.load(jsonObject)
         for i in values_array:
             elements = soup.find_all(class_=i)
+            print("elements",elements)
             for element in elements:
                 scraped_data.append(element.get_text())
-            return_json = jsonify({i:scraped_data})
+            json_data[i] = scraped_data
+            scraped_data=[]
+            # return_json = jsonify({i:json_data})
         # Replace with appropriate selector for your target table
-        return return_json, 200
-        elements = soup.find_all(class_=classtoextract)
-        for element in elements:
-            scraped_data.append(element.get_text())
-        # Replace with appropriate selector for your target table
-        return jsonify({
-            "Title":title,
-            'Quotes': scraped_data
-
-        }),200
+        df = pd.DataFrame(json_data)
+        excel_writer = pd.ExcelWriter('quotes.xlsx', engine='openpyxl')
+        df.to_excel(excel_writer, sheet_name='Quotes', index=False)
+        excel_writer.close()
+        response = make_response(send_file('quotes.xlsx', as_attachment=True, download_name='quotes.xlsx'))
+        response.headers['Content-Type'] = 'application/vnd.ms-excel'
+        return response
+        # return json_data, 200
+        
 
     except requests.exceptions.RequestException as e:
         return jsonify({'error': 'Error fetching webpage: ' + str(e)}), 500
