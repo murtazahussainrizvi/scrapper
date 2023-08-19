@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify,send_file,make_response
+from flask_cors import CORS
 from bs4 import BeautifulSoup
 import requests
 import json
 import pandas as pd
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/scrape', methods=['POST'])
 def scrape():
