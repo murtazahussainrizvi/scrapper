@@ -16,14 +16,13 @@ def scrape():
     baseurl = url
     classtoextract = requestJsonObject.get("class")
     nextpagetoextract = requestJsonObject.get("nextpage")
-    print(nextpagetoextract, "-----murtaza kutiya")
+    print(nextpagetoextract)
     values_array = classtoextract.split(',')
     print("values array=",values_array)
-    if not url:   
+    if not url: 
         return jsonify({'error': 'Missing URL parameter'}), 400
     try:
         json_data={"data":[
-
         ]}
         while url:
             response = requests.get(url)
@@ -56,13 +55,33 @@ def scrape():
          # return_json = jsonify({i:json_data})
         # Replace with appropriate selector for your target table
         # Extract quotes and authors from the alternating data
-        quotes = json_data["data"][::2]  # Extract even-indexed elements
-        authors = json_data["data"][1::2]  # Extract odd-indexed elements
+        # dynamic_variables = {}
+        
+        i=0
+        dynamic_variables={}
+        while(i!=len(values_array)):
+             dummyvaluearrray = values_array[:]
+            #  dummyvaluearrray=values_array
+             if(len(dummyvaluearrray)!=0):
+                variable_name = f"variable{i}"
+                print("value of original array",values_array)
+                print("length of dummy value array values array=",len(dummyvaluearrray))
+                dynamic_value = json_data["data"][i::len(dummyvaluearrray)]
+                dynamic_variables[variable_name] = dynamic_value
+                dummyvaluearrray.pop(0)
+                i=i+1              
+         
+        print("JSONDATA==>",json_data)
 
         # Create a DataFrame
-        df = pd.DataFrame({"Quote": quotes, "Author": authors})
+        
+        df = pd.DataFrame(dynamic_variables)
         # Create a new DataFrame to hold the separated data
-        exploded_df = df.explode(['Quote', 'Author'], ignore_index=True)
+        values =[]
+        for i in range(len(values_array)):
+            values.append(f"variable{i}")
+        print("values xxxxx==>",values) 
+        exploded_df = df.explode(values, ignore_index=True)
 
         excel_writer = pd.ExcelWriter('quotes.xlsx', engine='openpyxl')
         exploded_df.to_excel(excel_writer, sheet_name='Quotes', index=False)
