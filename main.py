@@ -37,10 +37,10 @@ def scrape():
             for i in values_array:
                 elements = soup.find_all(class_=i)
                 print("elements", elements)
-                car_data = []  # List to hold scraped data for each car
+                scraped_data = []  # List to hold scraped data for each car
                 for element in elements:
-                    car_data.append(element.get_text())
-                json_data[i].append(car_data)
+                    scraped_data.append(element.get_text())
+                json_data[i].append(scraped_data)
             try:
                 next_page_link = soup.find("li", class_=nextpagetoextract).find("a")["href"]
                 next_page_url = baseurl + next_page_link
