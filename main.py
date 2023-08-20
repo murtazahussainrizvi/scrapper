@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import pandas as pd
-
+from itertools import zip_longest
 app = Flask(__name__)
 CORS(app)
 
@@ -16,15 +16,14 @@ def scrape():
     baseurl = url
     classtoextract = requestJsonObject.get("class")
     nextpagetoextract = requestJsonObject.get("nextpage")
-    print(nextpagetoextract, "-----murtaza kutiya")
     values_array = classtoextract.split(',')
     print("values array=",values_array)
     if not url:   
         return jsonify({'error': 'Missing URL parameter'}), 400
     try:
-        json_data={"data":[
-
-        ]}
+        json_data={}
+        for y in (values_array):
+            json_data[y] = []
         while url:
             response = requests.get(url)
             response.raise_for_status()
@@ -33,16 +32,15 @@ def scrape():
                     # Extract the title from the parsed HTML
             title = soup.title.text if soup.title else "Title Not Found"
             print(title)
-            scraped_data = []
         
                 # json_data = json.load(jsonObject)
             for i in values_array:
                 elements = soup.find_all(class_=i)
-                print("elements",elements)
+                print("elements", elements)
+                car_data = []  # List to hold scraped data for each car
                 for element in elements:
-                    scraped_data.append(element.get_text())
-                json_data["data"].append(scraped_data)
-                scraped_data=[]
+                    car_data.append(element.get_text())
+                json_data[i].append(car_data)
             try:
                 next_page_link = soup.find("li", class_=nextpagetoextract).find("a")["href"]
                 next_page_url = baseurl + next_page_link
@@ -53,16 +51,13 @@ def scrape():
             except:
                 print('The scraper has gone through all the pages')
                 break
-         # return_json = jsonify({i:json_data})
+        return_json = jsonify({i:json_data})
         # Replace with appropriate selector for your target table
-        # Extract quotes and authors from the alternating data
-        quotes = json_data["data"][::2]  # Extract even-indexed elements
-        authors = json_data["data"][1::2]  # Extract odd-indexed elements
-
-        # Create a DataFrame
-        df = pd.DataFrame({"Quote": quotes, "Author": authors})
-        # Create a new DataFrame to hold the separated data
-        exploded_df = df.explode(['Quote', 'Author'], ignore_index=True)
+        print(json_data)
+        #class1 = json_data["data"][::2]  # Extract even-indexed elements
+        #class2 = json_data["data"][1::2]  # Extract odd-indexed elements
+        df = pd.DataFrame(json_data)
+        exploded_df = df.explode(values_array)
 
         excel_writer = pd.ExcelWriter('quotes.xlsx', engine='openpyxl')
         exploded_df.to_excel(excel_writer, sheet_name='Quotes', index=False)
